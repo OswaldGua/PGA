@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">AmisBox Autosphere v2.4</string>
+    <string name="website_domain">tactyl.com</string>
+    <string name="website_url">https://borne.autosphere.fr/concession/mu44c4</string>
+    <string name="website_url2">https://cs.autosphere.fr/</string>
+    <string name="website_url_error">https://cs.autosphere.fr/</string>
+    <string name="title_activity_fullscreen">AmisBox - Autosphere v2.4</string>
+    <string name="version_modifications">
+        2.2 : debug - Wifi connection
+        2.3 : check build.prop + read string from file
+        2.4 : Autostart "Boot receiver"
+                Add launchMode="singleTask" in Manifest (or use "singleInstance")
+                et restart after crash ?
+    </string>
+</resources>
