@@ -3,7 +3,6 @@ package com.tactyl.www.autosphere
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.webkit.*
@@ -11,14 +10,13 @@ import kotlinx.android.synthetic.main.activity_webview.*
 import org.jetbrains.anko.progressDialog
 import org.threeten.bp.Instant
 import java.io.File
-import java.io.FileWriter
-import java.io.IOException
 
-// TODO inscrire les infos de versions dans un fichier externe
-// TODO message erreur si installation sur un autre peripherique
 
 var returnCheckBuildProp=false
+var webURLFromAPI=""
 var webURL=""
+var ProductModel=""
+var ProductSerial=""
 
 @SuppressLint("SetJavaScriptEnabled")
 class MainActivity : BaseActivity() {
@@ -32,7 +30,7 @@ class MainActivity : BaseActivity() {
 //        registerReceiver(ConnectivityReceiver(),
 //                IntentFilter(ConnectivityManager.EXTRA_NO_CONNECTIVITY   .CONNECTIVITY_ACTION))
 
-        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE                                        //Config pein ecran + desactive barres
+        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE                                        //Config plein ecran + desactive barres
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -63,96 +61,35 @@ class MainActivity : BaseActivity() {
         textViewInfo.visibility= View.VISIBLE
 
         returnCheckBuildProp=checkBuildProp()
-        if (!returnCheckBuildProp)                                                                      // Verification utilisation sur AMISBOX
+        if (!returnCheckBuildProp)                                                                      // Verification utilisation sur AMISBOX + SN
             {
                 textViewInfo.text = "\nVeuillez utiliser ce programme sur une AmisBox\n"
             }
         else
             {
-                textViewInfo.text = "AmisBox - Infos : \n" + getString(R.string.title_activity_fullscreen) + "\n\nLog info :\n"
+                textViewInfo.text = "AmisBox - Infos : \n ${getString(R.string.title_activity_fullscreen)} \nSN : $ProductSerial \n\nLog info :\n"
             }
-
-        webURL=getURLFromFile()
-
-
-//        myButton.setOnClickListener {
-//            textViewInfo.text = textViewInfo.text.toString() + Instant.now() +" : Reload URL\n"
-//            Log.d("AMISWEB : ", "Reload URL")
-//            //goHome(webView)
-//            webView.loadUrl(getString(R.string.website_url_error))
-//        }
-
-
 
         }
 
     private fun checkBuildProp():Boolean {                                                          //Verification si build.prop contient firefly...
         val lineList = File("/system/build.prop").readLines()
+        var FlagReturn:Boolean=false
         lineList.forEach {
             //Log.d("AMISWEB : ", "Build.Prop :  $it")
-            if (it.contains("ro.product.model=firefly-rk3288",true))
-                 return true
-            }
-        return (false)
+            if (it.contains("ro.product.model=firefly-rk3288",true)){
+                ProductModel = it.substring(18)
+                FlagReturn=true}
+
+            if (it.contains("Serial=",true)){
+                ProductSerial = it.substring(7)
+            FlagReturn=true}
+        }
+
+        return FlagReturn
     }
 
-    private fun getURLFromFile():String {                                                           //recuperation de l'url
 
-        val sdcard = Environment.getExternalStorageDirectory()
-        val home = File("$sdcard/AmisBox")
-        var tempURL = getString(R.string.website_url)
-
-        if (!home.exists()) {                                                                         //1er utilisation apres instalation, fir n'existe pas
-            home.mkdirs()
-//            var countDownTimer = object : CountDownTimer(2000, 100) {
-//                override fun onFinish() {}
-//
-//                override fun onTick(p0: Long) {
-//                    //Log.d("AmisBox : ","Timer : "+p0)
-//                }
-//            }
-//                // override object functions here, do it quicker by setting cursor on object, then type alt + enter ; implement members
-//            countDownTimer.start()
-        }
-
-            val fileAmisBoxSetting = File("$sdcard/AmisBox/setting.txt")
-
-        if (!fileAmisBoxSetting.exists()) {                                                         //Si fichier n'existe pas, creation et ecriture d'url
-            var fileWriter: FileWriter? = null
-
-            try {
-                fileWriter = FileWriter("$sdcard/AmisBox/setting.txt")
-                //val tempURL = getString(R.string.website_url)
-                fileWriter.append("url = $tempURL")
-                fileWriter.append('\n')
-                //return tempURL
-
-            } catch (e: Exception) {
-                println("Writing file error!")
-                e.printStackTrace()
-            } finally {
-                try {
-                    fileWriter!!.flush()
-                    fileWriter.close()
-                    } catch (e: IOException) {
-                    println("Flushing/closing error!")
-                    e.printStackTrace()
-                    }
-                }
-        }
-        else {                                                                                  //Sinon Lecture
-                val lineList = fileAmisBoxSetting.readLines()
-                lineList.forEach {
-                    //Log.d("AMISWEB : ", "Build.Prop :  $it")
-                    if (it.contains("url = ", true)) {
-                    tempURL = it.substringAfterLast("= ")
-                    //return tempURL
-                    }
-                }
-
-        }
-        return tempURL
-    }
 
     private inner class mywebViewClient : WebViewClient() {
 

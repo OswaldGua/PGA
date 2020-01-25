@@ -7,13 +7,23 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.net.wifi.WifiManager
 import android.os.Bundle
+import android.os.Environment
 import android.support.v7.app.AppCompatActivity
 import android.text.TextUtils
 import android.util.Log
 import android.view.View
+import com.tactyl.www.autosphere.Network.API.RetrofitClient
+import com.tactyl.www.autosphere.Network.responses.DataURL
 import kotlinx.android.synthetic.main.activity_webview.*
+import org.jetbrains.anko.toast
 import org.jetbrains.annotations.Nullable
 import org.threeten.bp.Instant
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -45,22 +55,22 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
                 webView.visibility=View.GONE
             }
 
-            msgTXT = msgTXT + Instant.now() +" : No Internet connection\n"
+            msgTXT = "$msgTXT " +Instant.now() +" : No Internet connection\n"
             Log.d("AMISWEB : ", textViewInfo.text.toString())
-            textViewInfo.text = textViewInfo.text.toString() + msgTXT
+            textViewInfo.text = "${textViewInfo.text} $msgTXT"
         } else {
 
-            msgTXT = msgTXT + Instant.now() +" : Internet connection ON\n"
+            msgTXT = "$msgTXT " + Instant.now() +" : Internet connection ON\n"
             Log.d("AMISWEB : ", "Internet connection ON")
 
             val netInfo = getDeviceIpAddress()
             Log.d("AMISWEB : ", "IP info : " + netInfo)
-            msgTXT = msgTXT + "IP info : " + netInfo //+"\n"
+            msgTXT = "$msgTXT IP info : $netInfo  \n"
 
             imageView.visibility=View.GONE
             textViewInfo.visibility=View.GONE
             webView.visibility=View.VISIBLE
-            textViewInfo.text = textViewInfo.text.toString() + msgTXT
+            textViewInfo.text = "${textViewInfo.text} $msgTXT"
             goHome()
         }
 
@@ -74,9 +84,29 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
     }
 
     fun goHome()   {
+        //TODO check si ProductSerial dif "", ne pas lancer returnCheckBuildProp (redondant)
         if (returnCheckBuildProp)
         //webView.loadUrl(getString(R.string.website_url))
-        webView.loadUrl(webURL)
+            if(ProductSerial.isEmpty()){
+                textViewInfo.text = "${textViewInfo.text}\n\n ***** NO SERIAL ID DETECTED, PLEASE CONTACT SUPPORT ***** \n"
+            }
+            else{
+                webURLFromAPI = getURLFromAPI()
+                textViewInfo.text = "${textViewInfo.text}\n\n ***** URL FROM API : $webURLFromAPI ***** \n"
+
+                if (webURLFromAPI.isNotEmpty())  {
+                    //TODO Sauve URL to File
+                    //textViewInfo.text = "${textViewInfo.text}\n\n ***** URL FROM API ***** \n"
+                    //webView.destroy()
+                    webView.loadUrl(webURLFromAPI)
+                }
+                else {
+                    textViewInfo.text = "${textViewInfo.text}\n\n ***** URL FROM FILE ***** \n"
+                    webURL = getURLFromFile()
+                    webView.loadUrl(webURL)
+                }
+            }
+
     }
 
     /**
@@ -121,7 +151,7 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
         val mWifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         Log.d("AMISWEB : ","MAC Add Wifi : " + "")
 
-        if (mWifiManager != null && mWifiManager.isWifiEnabled) {
+        if (mWifiManager!= null && mWifiManager.isWifiEnabled) {
             val mac=mWifiManager.connectionInfo.macAddress
             Log.d("AMISWEB : ","MacAddress : " + mac)
             textViewInfo.text = textViewInfo.text.toString() + "MacAddress Wifi: " + mac +"\n"
@@ -172,4 +202,93 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
         return null
     }
 
+    private fun getURLFromAPI():String{
+        var tempwebURLFromAPI=""
+        val destinationService = RetrofitClient.instance
+        val requestCall = destinationService.getJSONFileAutosphere()
+
+        requestCall.enqueue(object : Callback<List<DataURL>> {
+            override fun onFailure(call: Call<List<DataURL>>, t: Throwable) {
+                toast("Faillure Backoffice connection !")
+                textViewInfo.text = "${textViewInfo.text} \n\n ***** Download URL from API Failed ***** \n"
+            }
+
+            override fun onResponse(call: Call<List<DataURL>>, response: Response<List<DataURL>>) {
+                if(response.isSuccessful){
+                    val urlListFromAPI=response.body()!!
+                    textViewInfo.text = "${textViewInfo.text}\n DataFromAPI  OK : ${urlListFromAPI.size} \n"
+
+                    val indexListU = urlListFromAPI.size-1
+                   for (i in 0 until indexListU) {
+                       if (urlListFromAPI[i].serial== ProductSerial){
+                           tempwebURLFromAPI=urlListFromAPI[i].uRL
+                           textViewInfo.text = "${textViewInfo.text} \n ***** URL FROM API : $tempwebURLFromAPI \n"
+
+                           webView.loadUrl(tempwebURLFromAPI)
+                           // TODO SAUV URL dans fichier text **************
+                       }
+                   }
+                }
+            }
+        })
+        return tempwebURLFromAPI
+    }
+
+    private fun getURLFromFile():String {                                                           //recuperation de l'url
+
+        val sdcard = Environment.getExternalStorageDirectory()
+        val home = File("$sdcard/AmisBox")
+        var tempURL = getString(R.string.website_url)
+
+        if (!home.exists()) {                                                                         //1er utilisation apres instalation, fir n'existe pas
+            home.mkdirs()
+//            var countDownTimer = object : CountDownTimer(2000, 100) {
+//                override fun onFinish() {}
+//
+//                override fun onTick(p0: Long) {
+//                    //Log.d("AmisBox : ","Timer : "+p0)
+//                }
+//            }
+//                // override object functions here, do it quicker by setting cursor on object, then type alt + enter ; implement members
+//            countDownTimer.start()
+        }
+
+        val fileAmisBoxSetting = File("$sdcard/AmisBox/setting.txt")
+
+        if (!fileAmisBoxSetting.exists()) {                                                         //Si fichier n'existe pas, creation et ecriture d'url
+            var fileWriter: FileWriter? = null
+
+            try {
+                fileWriter = FileWriter("$sdcard/AmisBox/setting.txt")
+                //val tempURL = getString(R.string.website_url)
+                fileWriter.append("url = $tempURL")
+                fileWriter.append('\n')
+                //return tempURL
+
+            } catch (e: Exception) {
+                println("Writing file error!")
+                e.printStackTrace()
+            } finally {
+                try {
+                    fileWriter!!.flush()
+                    fileWriter.close()
+                } catch (e: IOException) {
+                    println("Flushing/closing error!")
+                    e.printStackTrace()
+                }
+            }
+        }
+        else {                                                                                  //Sinon Lecture
+            val lineList = fileAmisBoxSetting.readLines()
+            lineList.forEach {
+                //Log.d("AMISWEB : ", "Build.Prop :  $it")
+                if (it.contains("url = ", true)) {
+                    tempURL = it.substringAfterLast("= ")
+                    //return tempURL
+                }
+            }
+
+        }
+        return tempURL
+    }
 }
