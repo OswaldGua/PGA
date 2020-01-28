@@ -61,9 +61,10 @@ class MainActivity : BaseActivity() {
         textViewInfo.visibility= View.VISIBLE
 
         returnCheckBuildProp=checkBuildProp()
-        if (!returnCheckBuildProp)                                                                      // Verification utilisation sur AMISBOX + SN
+        if ( !returnCheckBuildProp)                                                                      // Verification utilisation sur AMISBOX + SN
             {
                 textViewInfo.text = "\nVeuillez utiliser ce programme sur une AmisBox\n"
+
             }
         else
             {
@@ -74,16 +75,18 @@ class MainActivity : BaseActivity() {
 
     private fun checkBuildProp():Boolean {                                                          //Verification si build.prop contient firefly...
         val lineList = File("/system/build.prop").readLines()
-        var FlagReturn:Boolean=false
+        var FlagReturn = false
         lineList.forEach {
             //Log.d("AMISWEB : ", "Build.Prop :  $it")
-            if (it.contains("ro.product.model=firefly-rk3288",true)){
-                ProductModel = it.substring(18)
-                FlagReturn=true}
+            if (it.contains("ro.product.name=${getString(R.string.productName)}",true)){
+                ProductModel = it.substring(16)
+                FlagReturn = true
+            }
 
             if (it.contains("Serial=",true)){
                 ProductSerial = it.substring(7)
-            FlagReturn=true}
+            //FlagReturn=true
+            }
         }
 
         return FlagReturn
@@ -96,7 +99,7 @@ class MainActivity : BaseActivity() {
         override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
             super.onReceivedHttpError(view, request, errorResponse)
 
-            textViewInfo.text = textViewInfo.text.toString() + Instant.now() +" : HTTP Error :\n Request : " + request.toString() + "\n errorResponse : " + errorResponse + "\n"
+            textViewInfo.text = " ${textViewInfo.text} ${Instant.now()} : HTTP Error :\n Request : $request.toString() \n errorResponse : $errorResponse \n"
 
             Log.d("AMISWEB", " : HTTP Error :\n Request : " + request.toString() + "\n errorResponse : " + errorResponse + "\n")
 

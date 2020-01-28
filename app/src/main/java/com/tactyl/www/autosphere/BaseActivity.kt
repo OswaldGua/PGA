@@ -42,23 +42,26 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
         registerReceiver(ConnectivityReceiver(),
                 IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
 
-
+        //showMessage(false)
     }
-
 
     private fun showMessage(isConnected: Boolean) {
         var msgTXT="\n"
-        if (!isConnected) {
+        if (!isConnected or !returnCheckBuildProp) {
             if (webView.visibility!=View.GONE){
                 //imageView.visibility=View.VISIBLE
                 textViewInfo.visibility=View.VISIBLE
                 webView.visibility=View.GONE
             }
 
-            msgTXT = "$msgTXT " +Instant.now() +" : No Internet connection\n"
+            if (!isConnected)
+                msgTXT = "$msgTXT " +Instant.now() +" : No Internet connection\n"
+
             Log.d("AMISWEB : ", textViewInfo.text.toString())
             textViewInfo.text = "${textViewInfo.text} $msgTXT"
-        } else {
+        }
+
+        else {
 
             msgTXT = "$msgTXT " + Instant.now() +" : Internet connection ON\n"
             Log.d("AMISWEB : ", "Internet connection ON")
@@ -98,7 +101,8 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
                     //TODO Sauve URL to File
                     //textViewInfo.text = "${textViewInfo.text}\n\n ***** URL FROM API ***** \n"
                     //webView.destroy()
-                    webView.loadUrl(webURLFromAPI)
+                    //saveURLToFile(webURLFromAPI)
+                    //webView.loadUrl(webURLFromAPI)
                 }
                 else {
                     textViewInfo.text = "${textViewInfo.text}\n\n ***** URL FROM FILE ***** \n"
@@ -225,7 +229,7 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
                            textViewInfo.text = "${textViewInfo.text} \n ***** URL FROM API : $tempwebURLFromAPI \n"
 
                            webView.loadUrl(tempwebURLFromAPI)
-                           // TODO SAUV URL dans fichier text **************
+                           saveURLToFile(tempwebURLFromAPI)
                        }
                    }
                 }
@@ -291,4 +295,45 @@ open class BaseActivity : AppCompatActivity(), ConnectivityReceiver.Connectivity
         }
         return tempURL
     }
+
+
+    private fun saveURLToFile(urlToSave:String) {                                                           //recuperation de l'url
+
+        val sdcard = Environment.getExternalStorageDirectory()
+        val home = File("$sdcard/AmisBox")
+        //var tempURL = getString(R.string.website_url)
+
+        if (!home.exists())   home.mkdirs()                                                                       //1er utilisation apres instalation, fir n'existe pas
+
+        val fileAmisBoxSetting = File("$sdcard/AmisBox/setting.txt")
+
+        if (fileAmisBoxSetting.exists())
+        {
+            val tempVerif = fileAmisBoxSetting.delete()
+            if (!tempVerif) Log.d("AmisBox","ERROR DELETE FILE")
+        }
+
+            var fileWriter: FileWriter? = null
+
+            try {
+                fileWriter = FileWriter("$sdcard/AmisBox/setting.txt")
+                //val tempURL = getString(R.string.website_url)
+                fileWriter.append("url = $urlToSave")
+                fileWriter.append('\n')
+                //return tempURL
+
+            } catch (e: Exception) {
+                println("Writing file error!")
+                e.printStackTrace()
+            } finally {
+                try {
+                    fileWriter!!.flush()
+                    fileWriter.close()
+                } catch (e: IOException) {
+                    println("Flushing/closing error!")
+                    e.printStackTrace()
+                }
+            }
+    }
+
 }

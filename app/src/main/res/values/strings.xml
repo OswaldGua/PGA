@@ -1,11 +1,12 @@
 <resources>
     <string name="app_name">AmisBox Autosphere v2.5 dev</string>
     <string name="website_domain">tactyl.com</string>
-    <string name="website_url">https://borne.autosphere.fr/concession/mu44c4</string>
-    <string name="website_url2">https://cs.autosphere.fr/</string>
-    <string name="website_url_error">https://cs.autosphere.fr/</string>
+    <string name="website_url">no more used</string>
+    <string name="website_url2">no more used</string>
+    <string name="website_url_error">no more used</string>
     <string name="title_activity_fullscreen">AmisBox - Autosphere v2.5 dev</string>
     <string name="baseURL">https://amisbox/tactyl.com/</string>
+    <string name="productName">AmisBox</string>
     <string name="version_modifications">
         2.2 : debug - Wifi connection
         2.3 : check build.prop + read string from file
@@ -13,6 +14,7 @@
                 Add launchMode="singleTask" in Manifest (or use "singleInstance")
         2.5 :   - Git VCS Branch master, dev
                 - Serial Number as ID
+                - productName check
                 - API url from server
     </string>
 </resources>
