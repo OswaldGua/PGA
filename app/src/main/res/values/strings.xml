@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">AmisBox Autosphere v2.5 dev</string>
+    <string name="app_name">AmisBox Autosphere v2.5</string>
     <string name="website_domain">tactyl.com</string>
     <string name="website_url">no more used</string>
     <string name="website_url2">no more used</string>
     <string name="website_url_error">no more used</string>
-    <string name="title_activity_fullscreen">AmisBox - Autosphere v2.5 dev</string>
+    <string name="title_activity_fullscreen">AmisBox - Autosphere v2.5</string>
     <string name="baseURL">https://amisbox/tactyl.com/</string>
     <string name="productName">AmisBox</string>
     <string name="version_modifications">
